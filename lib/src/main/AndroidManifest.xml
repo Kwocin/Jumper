@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="ink.girigiri.lib">
+
+    <application>
+        <service android:name=".service.DownLoadService"/>
+    </application>
+</manifest>
