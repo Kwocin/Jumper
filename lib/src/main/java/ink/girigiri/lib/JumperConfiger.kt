@@ -1,7 +1,9 @@
 package ink.girigiri.lib
 
 import android.app.Application
+import android.content.Context
 import ink.girigiri.lib.entity.Jump
+import ink.girigiri.lib.entity.JumpInfo
 import ink.girigiri.lib.entity.Jumper
 import ink.girigiri.lib.inf.IJump
 import ink.girigiri.lib.inf.IJumpHttpRequest
@@ -33,10 +35,13 @@ class JumperConfiger private constructor() {
     private lateinit var jumpUpdaterProxy: IJumpUpdaterProxy
     private lateinit var jumpInstallerProxy: IJumpInstallerProxy
     private lateinit var jumpReminderProxy: IJumpReminderProxy
-
+    private lateinit var jumpHttpRequest: IJumpHttpRequest
+    private lateinit var errorProcessorProxy: IJumpErrorProxy
     private lateinit var url: String
+    private lateinit var path: String
     private lateinit var params: HashMap<String, Any>
-
+    private var autoInstall=true
+    private var downloadOnBackground=true
     companion object {
         private var isInit: Boolean = false
         var application: Application? = null
@@ -49,37 +54,48 @@ class JumperConfiger private constructor() {
         }
 
         @JvmStatic
-        fun <J : IJump> get(clazz: Class<J>): Jumper<J>? {
+        fun <J : IJump> get(context: Context, clazz: Class<J>): Jumper<J>? {
             if (!checkBuild()) {
                 return null
             }
+            var jumpInfo=JumpInfo<J>(clazz, instance.url,
+                instance.params, instance.path
+                ,instance.autoInstall,
+                instance.downloadOnBackground)
+
             return Jumper(
-                instance.url,
-                instance.params,
-                clazz,
+                context,
+                jumpInfo,
                 instance.jumpCheckerProxy,
                 instance.jumpParserProxy,
                 instance.jumpReminderProxy,
-                instance.jumpUpdaterProxy,
-                instance.jumpInstallerProxy
+                instance.jumpUpdaterProxy!!,
+                instance.jumpInstallerProxy,
+                instance.jumpHttpRequest,
+                instance.errorProcessorProxy
             )
         }
 
         @JvmStatic
-        fun get(): Jumper<Jump>? {
+        fun get(context: Context): Jumper<Jump>? {
             if (!checkBuild()) {
                 return null
             }
+            var jumpInfo=JumpInfo(Jump().javaClass,
+                instance.url, instance.params,
+                instance.path,instance.autoInstall,
+                instance.downloadOnBackground)
 
             return Jumper(
-                instance.url,
-                instance.params,
-                Jump().javaClass,
+                context,
+                jumpInfo,
                 instance.jumpCheckerProxy,
                 instance.jumpParserProxy,
                 instance.jumpReminderProxy,
-                instance.jumpUpdaterProxy,
-                instance.jumpInstallerProxy
+                instance.jumpUpdaterProxy!!,
+                instance.jumpInstallerProxy,
+                instance.jumpHttpRequest,
+                instance.errorProcessorProxy
             )
         }
 
@@ -107,18 +123,23 @@ class JumperConfiger private constructor() {
         private var jumpInstallerProxy: IJumpInstallerProxy
         private var jumpHttpRequest: IJumpHttpRequest
         private var jumpReminderProxy: IJumpReminderProxy
+        private var errorProcessorProxy: IJumpErrorProxy
         private var url: String?
         private var params: HashMap<String, Any>
-
+        private var path:String?
+        private var autoInstall=true
+        private var downloadOnBackground=true
         init {
             url = null
             params = hashMapOf()
+            path=null
             jumpHttpRequest = DefaultJumpHttpRequest()
-            jumpCheckerProxy = BaseJumpChecker(jumpHttpRequest)
+            jumpCheckerProxy = BaseJumpChecker()
             jumpParserProxy = BaseJumpParser()
-            jumpUpdaterProxy = BaseJumpUpdater()
+            jumpUpdaterProxy=BaseJumpUpdater()
             jumpInstallerProxy = BaseJumpInstaller()
             jumpReminderProxy = BaseJumpReminder()
+            errorProcessorProxy=BaseErrorProcessor()
         }
 
         fun init(application: Application): Builder {
@@ -131,16 +152,26 @@ class JumperConfiger private constructor() {
             return this
         }
 
-        fun param(key: String, value: Any) {
+        fun param(key: String, value: Any):Builder {
             params.put(key, value)
+            return this
         }
 
-        fun param(map: Map<String, Any>) {
+        fun param(map: Map<String, Any>):Builder {
             params.plus(map)
+            return this
         }
-
-        fun request(request: IJumpHttpRequest) {
+        fun path(path:String):Builder{
+            this.path
+            return this
+        }
+        fun errorProcessor(errorProcessor: IJumpErrorProxy):Builder {
+            this.errorProcessorProxy = errorProcessor
+            return this
+        }
+        fun request(request: IJumpHttpRequest):Builder {
             this.jumpHttpRequest = request
+            return this
         }
 
         fun parser(parserProxy: IJumpParserProxy): Builder {
@@ -167,7 +198,14 @@ class JumperConfiger private constructor() {
             this.jumpInstallerProxy = installerProxy
             return this
         }
-
+        fun autoInstall(auto:Boolean):Builder{
+            this.autoInstall=auto
+            return this
+        }
+        fun downloadOnBackground(onBackground:Boolean):Builder{
+            this.downloadOnBackground=onBackground
+            return this
+        }
         fun build(): JumperConfiger? {
 
             if (url == null) {
@@ -176,13 +214,21 @@ class JumperConfiger private constructor() {
             } else {
                 instance.url = url!!
             }
+            if (path==null){
+                this.path= application?.cacheDir?.absolutePath
+            }
             isInit = true
             instance.params = params
+            instance.path=this.path.toString()
             instance.jumpParserProxy = this.jumpParserProxy
             instance.jumpInstallerProxy = this.jumpInstallerProxy
             instance.jumpUpdaterProxy = this.jumpUpdaterProxy
             instance.jumpCheckerProxy = this.jumpCheckerProxy
             instance.jumpReminderProxy=this.jumpReminderProxy
+            instance.jumpHttpRequest=this.jumpHttpRequest
+            instance.autoInstall=this.autoInstall
+            instance.downloadOnBackground=this.downloadOnBackground
+            instance.errorProcessorProxy=this.errorProcessorProxy
             return instance
         }
     }

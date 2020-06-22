@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Mine</string>
+    <string name="update_title">发现新版本</string>
+    <string name="update_version">V1.1.0</string>
+    <string name="notification_connecting">正在请求服务器...</string>
+    <string name="notification_title">开始下载</string>
+</resources>

@@ -1,7 +1,5 @@
 package ink.girigiri.lib.inf
 
-import ink.girigiri.lib.entity.VersionPack
-
 /**
  * 版本信息实例类
  * @property versionCode String?    版本号
@@ -12,12 +10,15 @@ import ink.girigiri.lib.entity.VersionPack
  * @property isDiffPack Boolean?    是否是差分包
 
  */
-interface IJump{
+interface IJump  {
+    var code:String?
+    var msg:String?
+    var apkName:String?
     var versionCode:String?
     var updateContent:String?
-    var versionPack: VersionPack?
     var updateDate:String?
     var isLastVersion:Boolean?
     var isDiffPack:Boolean?
+    var downloadUrl: String?
 
 }

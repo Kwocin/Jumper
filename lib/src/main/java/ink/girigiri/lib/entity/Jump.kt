@@ -13,12 +13,15 @@ import ink.girigiri.lib.inf.IJump
 
  */
 data class Jump(
+    override var code:String?=null,
+    override var msg:String?=null,
+    override var apkName: String?=null,
     override var versionCode: String?=null,
     override var updateContent: String?=null,
-    override var versionPack: VersionPack?=null,
     override var updateDate: String?=null,
     override var isLastVersion: Boolean?=null,
-    override var isDiffPack: Boolean?=null
+    override var isDiffPack: Boolean?=null,
+    override var downloadUrl: String?=null
 ) :IJump{
 
 

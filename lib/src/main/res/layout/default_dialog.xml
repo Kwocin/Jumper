@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@color/colorAccent"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:background="@android:color/white"
+        android:padding="@dimen/qb_px_10"
+        android:layout_width="@dimen/qb_px_250"
+        android:minWidth="@dimen/qb_px_200"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/title"
+            android:textSize="@dimen/qb_px_30"
+            android:textColor="@color/colorAccent"
+            android:text="@string/update_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:gravity="center"
+            android:id="@+id/versionCode"
+            android:layout_below="@+id/title"
+            android:textSize="@dimen/qb_px_15"
+            android:textColor="@color/colorAccent"
+            android:text="@string/update_version"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+        <androidx.core.widget.NestedScrollView
+            android:layout_below="@+id/versionCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:id="@+id/updateContent"
+                    android:layout_marginStart="@dimen/qb_px_10"
+                    android:text="1.新功能xxxxx\n2.修复了xxxx\n3.更新了xxx\n4.修改xxxx"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+                <Button
+                    android:id="@+id/updateBtn"
+                    android:text="Update"
+                    android:theme="@style/JumperTheme"
+                    android:textColor="@color/textColorLight"
+                    android:layout_width="match_parent"
+                    android:minHeight="@dimen/qb_px_40"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:id="@+id/cancel"
+                    android:gravity="center"
+                    android:textColor="@color/textColorDark"
+                    android:text="cancel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
+    </RelativeLayout>
+</LinearLayout>

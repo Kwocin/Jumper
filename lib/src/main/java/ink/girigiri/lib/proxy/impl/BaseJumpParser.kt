@@ -1,12 +1,11 @@
 package ink.girigiri.lib.proxy.impl
 
-import android.text.TextUtils
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import ink.girigiri.lib.entity.Jumper
+import ink.girigiri.lib.callback.JumperAffairCallBack
 import ink.girigiri.lib.inf.IJump
 import ink.girigiri.lib.proxy.IJumpParserProxy
-import org.json.JSONObject
+
+import java.lang.Exception
 
 class BaseJumpParser() : IJumpParserProxy {
 
@@ -17,13 +16,16 @@ class BaseJumpParser() : IJumpParserProxy {
      */
     override fun <J : IJump> parser(
         response: String,
-        jumper: Jumper<J>,
-        jump:Class<J>
-    ): J? {
-        if (TextUtils.isEmpty(response)) {
-            jumper.failed(Jumper.JUMPER_STATE_PARSER, "response is empty")
-            return null
+        jump: Class<J>,
+        callBack: JumperAffairCallBack
+    ) {
+        try {
+            callBack.next( Gson().fromJson(response, jump))
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            callBack.error(e)
         }
-        return Gson().fromJson(response,jump)
+
     }
 }

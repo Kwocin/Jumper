@@ -1,39 +1,46 @@
 package ink.girigiri.lib.entity
 
-import android.util.Log
-import ink.girigiri.lib.callback.ReminderCallBack
+import android.app.Activity
+import android.content.Context
+import ink.girigiri.lib.callback.JumperAffairCallBack
 import ink.girigiri.lib.inf.IJump
+import ink.girigiri.lib.inf.IJumpHttpRequest
 import ink.girigiri.lib.proxy.*
+import java.lang.Exception
+import java.util.*
 
 /**
  * 真正去做一系列更新操作的类
  * @param J:IJump 版本信息
  * @property clazz Class<J> 版本信息实例类
- * @property checkerProxy IJumpChecker 检查器
+ * @property checker IJumpChecker 检查器
  * @property paser IJumpParser 解析器
- * @property updaterProxy IJumpUpdater 更新器
- * @property installerProxy IJumpInstaller 安装器
+ * @property updater IJumpUpdater 更新器
+ * @property installer IJumpInstaller 安装器
  * @constructor
  */
-class Jumper<out J : IJump>(
-    private var url: String,
-    private var params: Map<String, Any>,
-    private var clazz: Class<J>,
+class Jumper< J : IJump>(
+    private var context: Context,
+    private var jumpInfo: JumpInfo<J>,
     private var checker: IJumpCheckerProxy,
     private var paser: IJumpParserProxy,
     private var reminder: IJumpReminderProxy,
     private var updater: IJumpUpdaterProxy,
-    private var installer: IJumpInstallerProxy
+    private var installer: IJumpInstallerProxy,
+    private var httpRequest: IJumpHttpRequest,
+    private var errorProcessor: IJumpErrorProxy
+){
 
-): ReminderCallBack {
+
     /**
      * 更新状态标识
      */
     companion object {
-        val JUMPER_STATE_CHECKE = 0
-        val JUMPER_STATE_PARSER = 1
-        val JUMPER_STATE_UPDATE = 2
-        val JUMPER_STATE_INSTALL = 3
+        const val JUMPER_STATE_CHECK = 0
+        const val JUMPER_STATE_PARSE = 1
+        const val JUMPER_STATE_REMIND = 2
+        const val JUMPER_STATE_UPDATE = 3
+        const val JUMPER_STATE_INSTALL = 4
     }
 
     /**
@@ -45,37 +52,50 @@ class Jumper<out J : IJump>(
     private var onUpdateStart: (() -> Unit)?
     private var onInstallStart: (() -> Unit)?
     private var onFailed: ((state: Int, err: String) -> Unit)?
-    /**
-     * 版本信息类
-     */
-    private var jump: J?
+    private var callback:OnJumperCallBack
+    private var affairQueue:Queue<Int>
 
     /**
      * 初始化
      */
     init {
-        jump = null
+        callback=OnJumperCallBack()
+        affairQueue=LinkedList()
         onCheckStart=null
         onParseStart=null
         onParseCompleted=null
         onUpdateStart=null
         onInstallStart=null
         onFailed=null
+        initAffariQueue()
+    }
+
+    private fun initAffariQueue() {
+        //事务加入队列
+        affairQueue.offer(JUMPER_STATE_CHECK)
+        affairQueue.offer(JUMPER_STATE_PARSE)
+        affairQueue.offer(JUMPER_STATE_REMIND)
+        affairQueue.offer(JUMPER_STATE_UPDATE)
+        affairQueue.offer(JUMPER_STATE_INSTALL)
     }
 
     /**
      * 获取 版本信息类
      * @return J?
      */
-    fun get(): J? = jump
+    fun get(): J? = jumpInfo.jump
 
     /**
      * 执行一系列的更新操作
      */
     fun jump() {
-        checker.check(url, params, this)
+        callback.next()
+    }
+
+    private fun check() {
         //执行回调
         onCheckStart?.invoke()
+        checker.check(jumpInfo,httpRequest,callback)
     }
 
     internal fun failed(state: Int,err: String) {
@@ -115,6 +135,7 @@ class Jumper<out J : IJump>(
         return this
     }
 
+
     /**===================================================================
 
     @Description 私有方法区
@@ -123,37 +144,59 @@ class Jumper<out J : IJump>(
     /**
      * 执行解析操作
      */
-    internal fun parse(response: String) {
+    private fun parse(response: String) {
         onParseStart?.invoke()
-        jump = paser.parser(response, this,clazz)
+
         //解析是否成功
-        onParseCompleted?.invoke(jump)
-        remind()
+        paser.parser(response,jumpInfo.clazz,callback)
+        onParseCompleted?.invoke(jumpInfo.jump)
+
     }
-    internal fun remind(){
-        reminder.showRemind(jump,this)
+    private fun update() {
+        updater.update(jumpInfo,httpRequest,callback)
     }
-    /**
-     * 下载更新包
-     *
-     */
-    override fun next() {
-        onUpdateStart?.invoke()
-        updater.update(jump, this)
+    private fun remind(any: J) {
+        jumpInfo.jump=any
+        if (context==null){
+            throw Exception("Context not null")
+        }
+        if (context is Activity) {
+            reminder.showRemind(context,jumpInfo,updater,httpRequest,callback)
+        }else{
+            throw Exception("Context not Activity Context")
+        }
     }
 
-    override fun cancel() {
-        Log.i("Jumper","cancel()")
-    }
 
     /**
      * 安装
      */
     private fun install() {
         onInstallStart?.invoke()
+        installer.install(jumpInfo,callback)
     }
 
 
+
+    inner class OnJumperCallBack: JumperAffairCallBack {
+        override fun next(any:Any?) {
+            //下一个队列
+            //弹出
+            when (affairQueue.poll()){
+                JUMPER_STATE_CHECK -> check()
+                JUMPER_STATE_PARSE -> parse(any?.toString()?:"")
+                JUMPER_STATE_REMIND -> remind(any!! as J)
+                JUMPER_STATE_UPDATE-> update()
+                JUMPER_STATE_INSTALL -> install()
+            }
+        }
+
+        override fun error(throwable: Throwable) {
+            errorProcessor.process(throwable)
+
+        }
+
+    }
 
 
 }

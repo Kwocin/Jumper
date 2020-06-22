@@ -1,27 +1,26 @@
 package ink.girigiri.lib.proxy.impl
 
+import ink.girigiri.lib.callback.JumperAffairCallBack
+import ink.girigiri.lib.entity.JumpInfo
 import ink.girigiri.lib.entity.Jumper
 import ink.girigiri.lib.inf.IJump
 import ink.girigiri.lib.inf.IJumpHttpRequest
 import ink.girigiri.lib.proxy.IJumpCheckerProxy
+import ink.girigiri.lib.proxy.IJumpErrorProxy
+import ink.girigiri.lib.proxy.IJumpParserProxy
 
-class BaseJumpChecker(
-    private var jumpRequest: IJumpHttpRequest
-) :IJumpCheckerProxy{
-    private lateinit var jumper:Jumper<IJump>
-    /**
-     * 检查版本
-     */
-    override fun <J:IJump> check(url: String, params: Map<String, Any>, jumper: Jumper<J>) {
-        this.jumper=jumper
-        jumpRequest.request(url,params,this)
+class BaseJumpChecker :IJumpCheckerProxy{
+    private lateinit var callBack:JumperAffairCallBack
+    override fun <J : IJump> check(jumpInfo: JumpInfo<J>,httpRequest: IJumpHttpRequest,callBack: JumperAffairCallBack) {
+        this.callBack=callBack
+        httpRequest.check(jumpInfo,this)
+
     }
 
     override fun completed(response: String) {
-        jumper.parse(response)
+        callBack.next(response)
     }
-
-    override fun failed(err: String) {
-        jumper.failed(Jumper.JUMPER_STATE_CHECKE,err)
+    override fun failed(t: Throwable) {
+        callBack.error(t)
     }
 }
